@@ -1,0 +1,32 @@
+# ----------------------
+# Data (do not commit)
+# ----------------------
+data/raw/
+data/processed/
+
+# ----------------------
+# Python
+# ----------------------
+__pycache__/
+*.pyc
+.env
+.venv/
+.ipynb_checkpoints/
+
+# ----------------------
+# R
+# ----------------------
+.Rhistory
+.RData
+.Rproj.user/
+renv/library/
+
+# ----------------------
+# macOS
+# ----------------------
+.DS_Store
+
+# ----------------------
+# Temporary results
+# ----------------------
+results/figures/tmp/
