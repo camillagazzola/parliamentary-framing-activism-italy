@@ -29,4 +29,4 @@ renv/library/
 # ----------------------
 # Temporary results
 # ----------------------
-results/figures/tmp/
+results/figures/tmp/data/
