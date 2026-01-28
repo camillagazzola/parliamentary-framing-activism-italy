@@ -1,0 +1,67 @@
+# Activism Dictionary (Italian)
+# Version: 1.0
+# Purpose: Recall-oriented filtering of parliamentary speeches
+# Unit of analysis: whole speech
+# Matching: surface-form, case-insensitive
+# Note: No lemmatisation applied at this stage
+
+protest_dissent:
+  - protesta
+  - proteste
+  - protestare
+  - dissenso
+  - contestazione
+  - contestare
+  - opposizione sociale
+
+collective_action_mobilisation:
+  - mobilitazione
+  - mobilitazioni
+  - mobilitare
+  - azione collettiva
+  - partecipazione collettiva
+  - attivazione
+
+movements_activism:
+  - attivismo
+  - attivista
+  - attivisti
+  - movimento
+  - movimenti
+  - movimento sociale
+  - movimenti sociali
+  - movimento politico
+  - movimenti politici
+
+demonstrations_gatherings:
+  - manifestazione
+  - manifestazioni
+  - corteo
+  - cortei
+  - presidio
+  - sit-in
+  - sciopero
+  - scioperi
+
+claim_making_grievances:
+  - rivendicazione
+  - rivendicazioni
+  - richiesta collettiva
+  - istanza sociale
+
+boundary_terms:
+  - rivolta
+  - rivolte
+  - sommossa
+  - insurrezione
+
+excluded_terms:
+  - dibattito parlamentare
+  - mozione
+  - emendamento
+  - interrogazione
+  - opinione personale
+
+contextual_exclusions:
+  - manifestazione di interessi
+  - manifestazione di volontà
