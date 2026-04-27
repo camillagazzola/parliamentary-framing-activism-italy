@@ -1,6 +1,6 @@
 # (De)Legitimising Protest: Parliamentary Framing of Activism in Italy, 2018–2025
 
-**Camilla Gazzola** | POL30870 Advanced Seminar in Politics | University College Dublin, 2025  
+**Camilla Gazzola** | POL30870 Advanced Seminar in Politics | University College Dublin, 2025/2026  
 **Supervisor:** Stephanie Dornschneider-Elkink
 
 ---
