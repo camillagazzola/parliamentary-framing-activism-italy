@@ -1,19 +1,31 @@
 #!/bin/bash
+# download_senato_transcripts.sh
+# Downloads Senato della Repubblica plenary stenographic transcripts (PDF)
+# for a given year, using parallel downloads.
+#
+# Usage: ./download_senato_transcripts.sh YEAR [JOBS] [LEG]
+#   YEAR: target year (e.g. 2023)
+#   JOBS: parallel download jobs (default: 20)
+#   LEG:  legislature number, 18 or 19 (default: 19)
+#
+# Output: data/raw/senato/<YEAR>/
+#
+# Author: Camilla Gazzola
+# Project: Italian Parliament Activism Framing (2018-2025)
+
 set -euo pipefail
 
-YEAR="${1:?Usage: ./senato_download_year_fast.sh YEAR [JOBS] [LEG]}"
+YEAR="${1:?Usage: ./download_senato_transcripts.sh YEAR [JOBS] [LEG]}"
 JOBS="${2:-20}"
 LEG="${3:-19}"
-OUTDIR="${4:-data/senato/${YEAR}}"
+OUTDIR="${4:-data/raw/senato/${YEAR}}"
 
-# Pick index URL depending on legislature
 if [ "$LEG" = "18" ]; then
   INDEX_BASE="https://www.senato.it/legislature/18/lavori/assemblea/resoconti-elenco-cronologico"
 else
   INDEX_BASE="https://www.senato.it/lavori/assemblea/resoconti-elenco-cronologico"
 fi
 
-# Try a few parameter names (site has used different ones)
 INDEX_URLS=(
   "${INDEX_BASE}?anno=${YEAR}"
   "${INDEX_BASE}?year=${YEAR}"
@@ -26,8 +38,7 @@ mkdir -p "$OUTDIR"
 pick_index() {
   for u in "${INDEX_URLS[@]}"; do
     html=$(curl -sL "$u" || true)
-    # must contain at least one Resaula link for that year
-    if echo "$html" | grep -q "tipodoc=Resaula" ; then
+    if echo "$html" | grep -q "tipodoc=Resaula"; then
       echo "$u"
       return 0
     fi
@@ -38,7 +49,6 @@ pick_index() {
 INDEX_URL=$(pick_index) || { echo "Could not fetch an index page"; exit 1; }
 echo "Index: $INDEX_URL"
 
-# Extract ids from show-doc links
 ids=$(curl -sL "$INDEX_URL" \
   | grep -Eo 'show-doc\?leg=[0-9]+&amp;tipodoc=Resaula&amp;id=[0-9]+&amp;idoggetto=0' \
   | sed 's/&amp;/\&/g' \
@@ -48,7 +58,6 @@ ids=$(curl -sL "$INDEX_URL" \
 count=$(echo "$ids" | sed '/^\s*$/d' | wc -l | tr -d " ")
 echo "Found ${count} IDs (before year filtering)"
 
-# Filter to only ids whose show-doc page mentions the target YEAR (safer than trusting index params)
 filtered_ids=$(
   printf "%s\n" $ids | xargs -n 1 -P "$JOBS" -I {} bash -c '
     id="{}"
@@ -68,12 +77,11 @@ printf "%s\n" $filtered_ids | sed '/^\s*$/d' | xargs -n 1 -P "$JOBS" -I {} bash 
   id="{}"
   pdf="https://www.senato.it/service/PDF/PDFServer/BGT/${id}.pdf"
   out="${OUTDIR}/BGT_${id}.pdf"
-
   [ -s "$out" ] && exit 0
-
   if ! curl -L --fail --retry 5 --retry-delay 2 -o "$out" "$pdf"; then
     echo "$id" >> "${OUTDIR}/missing_ids.txt"
     exit 0
   fi
 '
+
 echo "Done. Missing ids (if any): ${OUTDIR}/missing_ids.txt"
