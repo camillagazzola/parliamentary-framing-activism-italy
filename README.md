@@ -69,5 +69,3 @@ Steps 1–4 can be run directly from `data/activism_corpus_final.csv` without re
 
 - Camera dei Deputati: https://www.camera.it
 - Senato della Repubblica: https://www.senato.it
-
-Parliamentary transcripts are public records attributed to identifiable Members of Parliament in their public capacity.
