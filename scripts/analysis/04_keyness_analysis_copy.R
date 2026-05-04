@@ -2,49 +2,42 @@
 # =============================================================================
 # 04_keyness_analysis.R
 # (De)Legitimising Protest: Parliamentary Framing of Activism in Italy, 2018-2025
-# POL30870 Thesis — Camilla Gazzola, UCD 2025
+# POL30870 Thesis - Camilla Gazzola, UCD 2026
 #
-# PURPOSE: Identify vocabulary statistically overrepresented in each party's
+# PURPOSE: Identify vocabulary disproportionately associated with each party's
 #   discourse relative to all other parties on the same activism topic.
-#   Method: log2 relative term frequency ratio (keyness analysis).
+#   Method: log2 relative term frequency ratio.
 #   Lemmatisation: UDPipe italian-isdt-ud-2.5-191206.
-#   Content words only (NOUN, VERB, ADJ, ADV). Min frequency: n >= 3.
-#   Min speeches per party-topic cell: n >= 5.
+#   Content words only (NOUN, VERB, ADJ, ADV).
+#   Min frequency: n >= 2. Min speeches per party-topic cell: n >= 5.
 #
 #   Formula:
 #     distinctiveness = log2((tf_party + 0.0001) / (mean_tf_others + 0.0001))
 #
-# INPUT:  /Users/camillagazzola/Desktop/thesis_test/output/corpus_with_windows.csv
-# OUTPUT: /Users/camillagazzola/Desktop/thesis_test/output/keyness_all.csv
-#         /Users/camillagazzola/Desktop/thesis_test/output/keyness_top15_wide.csv
-#         /Users/camillagazzola/Desktop/thesis_test/output/keyness_by_year.csv
-#         /Users/camillagazzola/Desktop/thesis_test/output/keyness_[topic].csv
+# INPUT:  data/corpus_with_windows.csv
+# OUTPUT: data/keyness_all.csv
+#         data/keyness_top15_wide.csv
+#         data/keyness_by_year.csv
+#         data/keyness_[topic].csv
 #
-# Note: UDPipe parsing is cached to
-#   /Users/camillagazzola/Desktop/thesis_test/output/parsed_windows.rds
+# Note: UDPipe parsing is cached to data/parsed_windows.rds.
 #   Delete this file to force re-parsing.
-#
-# Run from anywhere:
-#   Rscript /Users/camillagazzola/Desktop/thesis_test/04_keyness_analysis.R
 # =============================================================================
 
 library(tidyverse)
 library(udpipe)
 library(stringr)
 
-# ── PATHS ─────────────────────────────────────────────────────────────────────
-
-INPUT_CSV   <- "/Users/camillagazzola/Desktop/thesis_test/output/corpus_with_windows.csv"
-OUTPUT_DIR  <- "/Users/camillagazzola/Desktop/thesis_test/output"
-MODEL_DIR   <- "/Users/camillagazzola/Desktop/thesis_test/udpipe"
-PARSED_RDS  <- "/Users/camillagazzola/Desktop/thesis_test/output/parsed_windows.rds"
+BASE        <- here::here()
+INPUT_CSV   <- file.path(BASE, "data", "corpus_with_windows.csv")
+OUTPUT_DIR  <- file.path(BASE, "data")
+MODEL_DIR   <- file.path(BASE, "udpipe")
+PARSED_RDS  <- file.path(BASE, "data", "parsed_windows.rds")
 
 dir.create(MODEL_DIR, recursive = TRUE, showWarnings = FALSE)
 
 MIN_DOCS <- 5
 MIN_FREQ <- 2
-
-# ── STOPLIST ──────────────────────────────────────────────────────────────────
 
 italian_stop_lemmas <- c(
   "essere","avere","fare","dire","potere","dovere","volere","andare",
@@ -60,9 +53,7 @@ italian_stop_lemmas <- c(
   "italia","italiano","europea","europeo","nazionale"
 )
 
-# ── LOAD DATA ─────────────────────────────────────────────────────────────────
-
-cat("Loading corpus with windows...\n")
+cat("Loading corpus...\n")
 df <- read_csv(INPUT_CSV, show_col_types = FALSE) %>%
   filter(!is.na(keyword_window), nchar(keyword_window) > 20) %>%
   filter(!is.na(party_clean), party_clean != "MISTO",
@@ -71,8 +62,6 @@ df <- read_csv(INPUT_CSV, show_col_types = FALSE) %>%
 
 cat("Speeches:", nrow(df), "\n")
 cat("Parties: ", paste(sort(unique(df$party_clean)), collapse = ", "), "\n\n")
-
-# ── UDPIPE MODEL ──────────────────────────────────────────────────────────────
 
 cat("Loading UDPipe model...\n")
 model_path <- file.path(MODEL_DIR, "italian-isdt-ud-2.5-191206.udpipe")
@@ -86,10 +75,8 @@ if (!file.exists(model_path)) {
 udmodel <- udpipe_load_model(model_path)
 cat("  Loaded:", model_path, "\n\n")
 
-# ── PARSE WINDOWS ─────────────────────────────────────────────────────────────
-
 if (file.exists(PARSED_RDS)) {
-  cat("Loading cached parsed tokens from:\n ", PARSED_RDS, "\n")
+  cat("Loading cached parsed tokens...\n")
   parsed_all <- readRDS(PARSED_RDS)
   cat("  Tokens:", nrow(parsed_all), "\n\n")
 } else {
@@ -120,8 +107,6 @@ if (file.exists(PARSED_RDS)) {
   cat("  Cached to:", PARSED_RDS, "\n\n")
 }
 
-# ── FILTER CONTENT WORDS ──────────────────────────────────────────────────────
-
 tokens <- parsed_all %>%
   filter(upos %in% c("NOUN","VERB","ADJ","ADV"), !is.na(lemma)) %>%
   mutate(lemma = tolower(lemma), year = as.integer(year)) %>%
@@ -132,11 +117,9 @@ tokens <- parsed_all %>%
 cat("Content tokens:", nrow(tokens), "\n")
 cat("Unique lemmas: ", n_distinct(tokens$lemma), "\n\n")
 
-# ── LEMMA COUNTS ─────────────────────────────────────────────────────────────
-
 doc_counts   <- df %>% count(party_clean, topic, name = "n_docs")
 valid_combos <- doc_counts %>% filter(n_docs >= MIN_DOCS)
-cat("Valid party × topic cells (n >=", MIN_DOCS, "):", nrow(valid_combos), "\n\n")
+cat("Valid party x topic cells (n >=", MIN_DOCS, "):", nrow(valid_combos), "\n\n")
 
 lemma_counts <- tokens %>%
   filter(paste(party_clean, topic) %in%
@@ -145,8 +128,6 @@ lemma_counts <- tokens %>%
   group_by(party_clean, topic) %>%
   mutate(total = sum(n), tf = n / total) %>%
   ungroup()
-
-# ── KEYNESS SCORES ────────────────────────────────────────────────────────────
 
 cat("Computing keyness scores...\n")
 
@@ -179,15 +160,10 @@ for (t in unique(valid_combos$topic)) {
 keyness_all <- bind_rows(keyness_results, .id = "combo") %>%
   separate(combo, into = c("topic", "party"), sep = "___")
 
-# ── SAVE ──────────────────────────────────────────────────────────────────────
-
-cat("\nSaving outputs...\n")
+cat("Saving outputs...\n")
 
 write_csv(keyness_all, file.path(OUTPUT_DIR, "keyness_all.csv"))
-cat("✓ keyness_all.csv\n")
-
 write_csv(lemma_counts, file.path(OUTPUT_DIR, "lemma_counts_all.csv"))
-cat("✓ lemma_counts_all.csv\n")
 
 keyness_all %>%
   group_by(topic, party) %>%
@@ -195,7 +171,6 @@ keyness_all %>%
   summarise(top_lemmas = paste(lemma, collapse = ", "), .groups = "drop") %>%
   pivot_wider(names_from = party, values_from = top_lemmas) %>%
   write_csv(file.path(OUTPUT_DIR, "keyness_top15_wide.csv"))
-cat("✓ keyness_top15_wide.csv\n")
 
 for (t in unique(keyness_all$topic)) {
   keyness_all %>%
@@ -206,9 +181,6 @@ for (t in unique(keyness_all$topic)) {
               n_total = sum(n), .groups = "drop") %>%
     write_csv(file.path(OUTPUT_DIR, paste0("keyness_", t, ".csv")))
 }
-cat("✓ keyness_[topic].csv files\n")
-
-# ── BY YEAR ───────────────────────────────────────────────────────────────────
 
 MIN_DOCS_YR <- 3
 MIN_FREQ_YR <- 2
@@ -258,7 +230,6 @@ if (length(yr_results) > 0) {
     separate(combo, into = c("year","topic","party"), sep = "___") %>%
     mutate(year = as.integer(year)) %>%
     write_csv(file.path(OUTPUT_DIR, "keyness_by_year.csv"))
-  cat("✓ keyness_by_year.csv\n")
 }
 
-cat("\nDone. All outputs in:", OUTPUT_DIR, "\n")
+cat("Done.\n")
