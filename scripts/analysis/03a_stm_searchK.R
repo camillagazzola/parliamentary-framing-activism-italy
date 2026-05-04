@@ -2,40 +2,31 @@
 # =============================================================================
 # 03a_stm_searchK.R
 # (De)Legitimising Protest: Parliamentary Framing of Activism in Italy, 2018-2025
-# POL30870 Thesis — Camilla Gazzola, UCD 2025
+# POL30870 Thesis — Camilla Gazzola, UCD 2026
 #
-# PURPOSE: Determine the optimal number of topics (K) for STM by running
-#   searchK() across K = 2:7 for each activism topic with sufficient
-#   observations (n >= 30). Evaluates held-out likelihood, semantic coherence,
-#   and residuals to select the best K per topic.
+# PURPOSE: Determine the optimal number of latent clusters (K) for STM by
+#   running searchK() across K = 2:7 for each activism topic with n >= 30
+#   speeches. Evaluates held-out likelihood and semantic coherence to select
+#   the best K per topic. Run before 03_stm_confirmatory.R.
 #
-# Run BEFORE 03_stm_confirmatory.R. Once you have the results, update
-#   K_TOPICS in 03_stm_confirmatory.R to the recommended value.
-#
-# INPUT:  /Users/camillagazzola/Desktop/thesis_test/output/corpus_with_windows.csv
-# OUTPUT: /Users/camillagazzola/Desktop/thesis_test/output/searchK_results.csv
-#         /Users/camillagazzola/Desktop/thesis_test/output/searchK_plots/
-#
-# Run from anywhere:
-#   Rscript /Users/camillagazzola/Desktop/thesis_test/03a_stm_searchK.R
+# INPUT:  data/corpus_with_windows.csv
+# OUTPUT: data/searchK_results.csv
+#         data/searchK_plots/
 # =============================================================================
 
 library(tidyverse)
 library(stm)
 library(quanteda)
 
-# ── PATHS ─────────────────────────────────────────────────────────────────────
-
-INPUT_CSV  <- "/Users/camillagazzola/Desktop/thesis_test/output/corpus_with_windows.csv"
-OUTPUT_DIR <- "/Users/camillagazzola/Desktop/thesis_test/output"
-PLOT_DIR   <- "/Users/camillagazzola/Desktop/thesis_test/output/searchK_plots"
+BASE       <- here::here()
+INPUT_CSV  <- file.path(BASE, "data", "corpus_with_windows.csv")
+OUTPUT_DIR <- file.path(BASE, "data")
+PLOT_DIR   <- file.path(BASE, "data", "searchK_plots")
 
 dir.create(PLOT_DIR, recursive = TRUE, showWarnings = FALSE)
 
 MIN_SPEECHES <- 30
-K_RANGE      <- 2:7   # test K = 2, 3, 4, 5, 6, 7
-
-# ── STOPWORDS ─────────────────────────────────────────────────────────────────
+K_RANGE      <- 2:7
 
 italian_stopwords <- c(
   stopwords("it"),
@@ -51,9 +42,7 @@ italian_stopwords <- c(
   "sull","sulla","dall","dalla","all","alla"
 )
 
-# ── LOAD DATA ─────────────────────────────────────────────────────────────────
-
-cat("Loading corpus with windows...\n")
+cat("Loading corpus...\n")
 df <- read_csv(INPUT_CSV, show_col_types = FALSE) %>%
   filter(!is.na(keyword_window), nchar(keyword_window) > 20) %>%
   filter(!is.na(party_clean), party_clean != "MISTO") %>%
@@ -69,11 +58,8 @@ topics_to_run <- df %>%
 
 cat("Topics to evaluate:", paste(topics_to_run, collapse = ", "), "\n\n")
 
-# ── SEARCHK FUNCTION ──────────────────────────────────────────────────────────
-
 run_searchK <- function(topic_name, data, k_range = K_RANGE) {
-  cat("\n", strrep("-", 50), "\n")
-  cat("Topic:", toupper(topic_name), "\n")
+  cat("\nTopic:", toupper(topic_name), "\n")
 
   topic_df <- data %>% filter(topic == topic_name)
   cat("  n =", nrow(topic_df), "\n")
@@ -95,7 +81,6 @@ run_searchK <- function(topic_name, data, k_range = K_RANGE) {
   meta     <- topic_df %>% select(party_clean, year) %>% as.data.frame()
 
   cat("  Running searchK for K =", paste(k_range, collapse = ", "), "...\n")
-  cat("  (This takes a few minutes per topic)\n")
 
   result <- tryCatch(
     searchK(
@@ -115,11 +100,9 @@ run_searchK <- function(topic_name, data, k_range = K_RANGE) {
 
   if (is.null(result)) return(NULL)
 
-  # Extract metrics
   metrics <- result$results %>%
     mutate(topic = topic_name)
 
-  # Print summary
   cat("\n  K | Coherence | Held-out likelihood | Residuals\n")
   for (i in seq_len(nrow(metrics))) {
     cat(sprintf("  %d |  %6.1f   |       %8.1f      |  %6.3f\n",
@@ -129,17 +112,13 @@ run_searchK <- function(topic_name, data, k_range = K_RANGE) {
                 metrics$residual[[i]]))
   }
 
-  # Save plot
   plot_path <- file.path(PLOT_DIR, paste0("searchK_", topic_name, ".pdf"))
   pdf(plot_path, width = 10, height = 6)
   plot(result, main = paste("searchK —", topic_name))
   dev.off()
-  cat("  Plot saved:", plot_path, "\n")
 
   metrics
 }
-
-# ── RUN FOR ALL TOPICS ────────────────────────────────────────────────────────
 
 all_metrics <- list()
 for (t in topics_to_run) {
@@ -147,31 +126,18 @@ for (t in topics_to_run) {
   if (!is.null(res)) all_metrics[[t]] <- res
 }
 
-# ── COMBINE AND SAVE ──────────────────────────────────────────────────────────
-
 if (length(all_metrics) > 0) {
-  metrics_df <- bind_rows(all_metrics)
-
-  # Unnest list columns
-  metrics_clean <- metrics_df %>%
+  metrics_clean <- bind_rows(all_metrics) %>%
     mutate(
-      K         = as.integer(unlist(K)),
-      semcoh    = as.numeric(unlist(semcoh)),
-      heldout   = as.numeric(unlist(heldout)),
-      residual  = as.numeric(unlist(residual)),
-      lbound    = as.numeric(unlist(lbound))
+      K        = as.integer(unlist(K)),
+      semcoh   = as.numeric(unlist(semcoh)),
+      heldout  = as.numeric(unlist(heldout)),
+      residual = as.numeric(unlist(residual)),
+      lbound   = as.numeric(unlist(lbound))
     ) %>%
     select(topic, K, semcoh, heldout, residual, lbound)
 
-  write_csv(metrics_clean,
-            file.path(OUTPUT_DIR, "searchK_results.csv"))
-  cat("\n✓ searchK_results.csv\n")
-
-  # Print recommended K per topic
-  cat("\n", strrep("=", 60), "\n")
-  cat("RECOMMENDED K PER TOPIC\n")
-  cat("(highest held-out likelihood = best predictive fit)\n")
-  cat(strrep("=", 60), "\n\n")
+  write_csv(metrics_clean, file.path(OUTPUT_DIR, "searchK_results.csv"))
 
   recommendations <- metrics_clean %>%
     group_by(topic) %>%
@@ -180,11 +146,8 @@ if (length(all_metrics) > 0) {
     select(topic, K, semcoh, heldout, residual) %>%
     arrange(desc(heldout))
 
+  cat("\nRecommended K per topic (by held-out likelihood):\n")
   print(recommendations, n = 20)
-
-  cat("\nNote: held-out likelihood is the primary criterion.\n")
-  cat("If recommended K varies widely across topics, consider\n")
-  cat("using a single K for consistency and comparability.\n")
 }
 
-cat("\nDone. Check searchK_plots/ for visual diagnostics.\n")
+cat("\nDone.\n")
