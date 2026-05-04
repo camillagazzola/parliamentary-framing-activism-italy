@@ -2,7 +2,7 @@
 # =============================================================================
 # 02_keyword_window_extraction.R
 # (De)Legitimising Protest: Parliamentary Framing of Activism in Italy, 2018-2025
-# POL30870 Thesis — Camilla Gazzola, UCD 2025
+# POL30870 Thesis — Camilla Gazzola, UCD 2026
 #
 # PURPOSE: Extract sentence-level windows (1 sentence either side) around
 #   activism keywords from each speech. These windows are used as input for
@@ -10,24 +10,18 @@
 #   immediate discursive context of activism references rather than unrelated
 #   sections of longer speeches (Caiani and della Porta 2010).
 #
-# INPUT:  /Users/camillagazzola/Desktop/thesis_test/output/corpus_with_topics.csv
-# OUTPUT: /Users/camillagazzola/Desktop/thesis_test/output/corpus_with_windows.csv
-#
-# Run from anywhere:
-#   Rscript /Users/camillagazzola/Desktop/thesis_test/02_keyword_window_extraction.R
+# INPUT:  data/corpus_with_topics.csv
+# OUTPUT: data/corpus_with_windows.csv
 # =============================================================================
 
 library(tidyverse)
 library(stringr)
 
-# ── PATHS ─────────────────────────────────────────────────────────────────────
+BASE       <- here::here()
+INPUT_CSV  <- file.path(BASE, "data", "corpus_with_topics.csv")
+OUTPUT_DIR <- file.path(BASE, "data")
 
-INPUT_CSV  <- "/Users/camillagazzola/Desktop/thesis_test/output/corpus_with_topics.csv"
-OUTPUT_DIR <- "/Users/camillagazzola/Desktop/thesis_test/output"
-
-WINDOW_SIZE <- 1  # sentences before and after the keyword sentence
-
-# ── ACTIVISM KEYWORDS ─────────────────────────────────────────────────────────
+WINDOW_SIZE <- 1
 
 activism_keywords <- c(
   "protesta","proteste","protestare","manifestazione","manifestazioni",
@@ -37,8 +31,6 @@ activism_keywords <- c(
   "blocco stradale","blocchi stradali","disobbedienza civile",
   "azione collettiva","boicottaggio","sit-in","picchetto"
 )
-
-# ── WINDOW EXTRACTION ─────────────────────────────────────────────────────────
 
 extract_window <- function(text, keywords, window_size = 1) {
   if (is.na(text) || nchar(text) < 10) return("")
@@ -72,26 +64,20 @@ extract_window <- function(text, keywords, window_size = 1) {
   window_text
 }
 
-# ── LOAD & PROCESS ────────────────────────────────────────────────────────────
-
-cat("Loading corpus with topics...\n")
+cat("Loading corpus...\n")
 df <- read_csv(INPUT_CSV, show_col_types = FALSE) %>%
   filter(topic != "unassigned")
-
 cat("Speeches:", nrow(df), "\n\n")
-cat("Extracting windows...\n")
 
+cat("Extracting windows...\n")
 df <- df %>%
   rowwise() %>%
   mutate(keyword_window = extract_window(text, activism_keywords, WINDOW_SIZE)) %>%
   ungroup()
 
-has_window <- sum(nchar(df$keyword_window) > 20, na.rm = TRUE)
-cat("Speeches with window:", has_window, "/", nrow(df), "\n")
+cat("Speeches with window:", sum(nchar(df$keyword_window) > 20, na.rm = TRUE),
+    "/", nrow(df), "\n")
 cat("Average window length:", round(mean(nchar(df$keyword_window), na.rm = TRUE)), "chars\n\n")
 
-# ── SAVE ──────────────────────────────────────────────────────────────────────
-
 write_csv(df, file.path(OUTPUT_DIR, "corpus_with_windows.csv"))
-cat("✓ corpus_with_windows.csv\n")
-cat("\nDone.\n")
+cat("Done.\n") 
