@@ -170,7 +170,3 @@ Main Python packages include:
 ## Notes on reproducibility
 
 The repository is intended to make the thesis pipeline transparent and reproducible. Some paths may need to be adjusted depending on the local directory structure. Raw parliamentary files are not included, but the scripts and processed data allow the main analysis to be inspected and reproduced.
-
-## Citation
-
-Gazzola, C. (2026). *(De)Legitimising Protest: Parliamentary Framing of Activism in Italy, 2018–2025*. BA thesis, University College Dublin, POL30870 Advanced Seminar in Politics.
