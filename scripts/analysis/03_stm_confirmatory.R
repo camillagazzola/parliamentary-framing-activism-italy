@@ -24,8 +24,22 @@ BASE       <- here::here()
 INPUT_CSV  <- file.path(BASE, "data", "corpus_with_windows.csv")
 OUTPUT_DIR <- file.path(BASE, "data")
 
+
 MIN_SPEECHES <- 30
-K_TOPICS     <- 4
+
+
+K_BY_TOPIC <- c(
+  incarcerated_persons = 2,
+  climate_activists    = 2,
+  police_security      = 2,
+  labor                = 2,
+  far_right            = 2,
+  students             = 2,
+  no_vax               = 2,
+  migrants             = 3,
+  pro_palestine        = 3,
+  antisemitism         = 3
+)
 
 italian_stopwords <- c(
   stopwords("it"),
@@ -52,29 +66,29 @@ cat("Topics:  ", n_distinct(df$topic), "\n\n")
 
 run_stm <- function(topic_name, data, k = K_TOPICS) {
   cat("\nTopic:", toupper(topic_name), "\n")
-
+  
   topic_df <- data %>% filter(topic == topic_name)
   cat("  n =", nrow(topic_df), "\n")
-
+  
   if (nrow(topic_df) < MIN_SPEECHES) {
     cat("  Skipping — below minimum\n"); return(NULL)
   }
-
+  
   corp  <- corpus(topic_df, text_field = "keyword_window")
   toks  <- tokens(corp, remove_punct = TRUE, remove_numbers = TRUE) %>%
     tokens_tolower() %>%
     tokens_remove(italian_stopwords) %>%
     tokens_wordstem(language = "italian")
   dfm_t <- dfm(toks) %>% dfm_trim(min_termfreq = 3, min_docfreq = 2)
-
+  
   if (nfeat(dfm_t) < 30) {
     cat("  Skipping — too few features\n"); return(NULL)
   }
   cat("  Features:", nfeat(dfm_t), "\n")
-
+  
   stm_data <- convert(dfm_t, to = "stm")
   meta     <- topic_df %>% select(party_clean, year) %>% as.data.frame()
-
+  
   cat("  Fitting STM (K =", k, ")...\n")
   model <- tryCatch(
     stm(documents  = stm_data$documents, vocab = stm_data$vocab,
@@ -83,16 +97,16 @@ run_stm <- function(topic_name, data, k = K_TOPICS) {
     error = function(e) { cat("  Failed:", e$message, "\n"); NULL }
   )
   if (is.null(model)) return(NULL)
-
+  
   tw <- labelTopics(model, n = 10)
   for (i in 1:k)
     cat("  Cluster", i, ":", paste(tw$prob[i, 1:7], collapse = ", "), "\n")
-
+  
   party_effects <- tryCatch(
     estimateEffect(1:k ~ party_clean, model, meta = meta, uncertainty = "Global"),
     error = function(e) NULL
   )
-
+  
   list(topic = topic_name, n = nrow(topic_df), k = k,
        model = model, top_words = tw,
        party_effects = party_effects, meta = meta)
@@ -105,7 +119,9 @@ cat("Topics to model:", paste(topics_to_run, collapse = ", "), "\n")
 
 all_results <- list()
 for (t in topics_to_run) {
-  res <- run_stm(t, df)
+  k   <- K_BY_TOPIC[t]
+  if (is.na(k)) k <- K_TOPICS  # fallback to default if topic not listed
+  res <- run_stm(t, df, k = k)
   if (!is.null(res)) all_results[[t]] <- res
 }
 
@@ -131,7 +147,7 @@ for (topic in names(all_results)) {
   if (is.null(res$party_effects)) next
   parties  <- unique(res$meta$party_clean)
   baseline <- parties[1]
-
+  
   for (i in 1:res$k) {
     words <- paste(res$top_words$prob[i, 1:10], collapse = ", ")
     for (p in parties) {
