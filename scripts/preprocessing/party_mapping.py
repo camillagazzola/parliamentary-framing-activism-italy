@@ -2,15 +2,10 @@
 """
 party_mapping.py
 ----------------
-Party name normalization for Italian Parliament (2018-2025)
-
-This maps the various party abbreviations found in transcripts to 
-standardized names and political position categories.
-
-Use this to:
-1. Normalize party names in your corpus
-2. Add political position (left/center/right) for analysis
-3. Handle party name changes across legislatures
+Party name normalisation and government position mapping for the
+Italian Parliament (2018-2025). Maps raw party abbreviations from
+parliamentary transcripts to standardised labels and adds political
+position and government/opposition status by date.
 
 Author: Camilla Gazzola
 Project: Italian Parliament Activism Framing (2018-2025)
