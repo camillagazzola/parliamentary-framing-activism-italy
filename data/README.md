@@ -1,1 +1,1 @@
-Raw and processed data are not stored in this repository.
+Raw and unprocessed data are not stored in this repository.
