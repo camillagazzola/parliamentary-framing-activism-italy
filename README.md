@@ -1,146 +1,176 @@
 # (De)Legitimising Protest: Parliamentary Framing of Activism in Italy, 2018–2025
 
-**Camilla Gazzola** | POL30870 Advanced Seminar in Politics | University College Dublin, 2025/2026
-
----
+Camilla Gazzola  
+POL30870 – Advanced Seminar in Politics  
+University College Dublin, 2025/2026
 
 ## Overview
 
-This repository contains the code, annotation data, and documentation for the computational pipeline underlying the thesis *(De)Legitimising Protest: Parliamentary Framing of Activism in Italy, 2018–2025*. The pipeline combines web scraping, speaker segmentation, supervised machine learning classification, keyness analysis, and structural topic modelling to analyse how Italian parliamentary discourse frames activism and protest across two legislatures (2018–2025).
+This repository contains the code, processed data, outputs, and documentation for the BA thesis:
 
-Full methodological details, codebook, and analytical decisions are documented in the thesis and its appendices.
+**(De)Legitimising Protest: Parliamentary Framing of Activism in Italy, 2018–2025**
 
----
+The project analyses how activism and protest are framed in Italian parliamentary discourse between 2018 and 2025. It constructs a corpus of parliamentary speeches from the Camera dei Deputati and Senato della Repubblica, identifies speeches substantively discussing activism, assigns activism categories, and analyses party-specific framing through keyness analysis and confirmatory Structural Topic Modelling (STM).
 
-## Repository Structure
+The pipeline combines:
 
-```
-├── scripts/                # Analysis pipeline scripts
-│   ├── download/           # Web scraping from parliamentary sources
-│   ├── build_corpus/       # Corpus construction 
-│   ├── preprocessing/      # Segmentation
-│   ├── filtering/          # Keyword filtering
-│   ├── metadata/           # Metadata extraction and cleaning
-│   ├── ML/                 # Supervised classification (logistic regression)
-│   └── analysis/           # Analysis (R)
+- web scraping and corpus construction;
+- speaker segmentation and metadata extraction;
+- dictionary-based filtering;
+- supervised machine learning classification;
+- activism-category assignment;
+- sentence-window extraction;
+- keyness analysis;
+- Structural Topic Modelling;
+- final figure generation.
+
+Full methodological details, annotation rules, and coding decisions are provided in the thesis appendices and codebook.
+
+## Repository structure
+
+```text
+├── scripts/                  # Analysis pipeline scripts
+│   ├── download/             # Web scraping from parliamentary sources
+│   ├── build_corpus/         # Corpus construction
+│   ├── preprocessing/        # Speaker segmentation and preprocessing
+│   ├── filtering/            # Dictionary filtering
+│   ├── metadata/             # Metadata extraction and cleaning
+│   ├── ML/                   # Supervised classification
+│   └── analysis/             # R analysis scripts
 │
-├── data/                   # Data files (processed)
-│   ├── corpus/             # Parliamentary speeches corpus
-│   ├── analysis/           # Analysis-ready datasets
-│   └── README.md           
+├── data/                     # Processed and analysis-ready datasets
+│   ├── corpus/               # Corpus files
+│   ├── analysis/             # Analysis-ready datasets
+│   └── README.md
 │
-├── docs/                   # Documentation and resources
-│   ├── codebook.pdf        # Detailed codebook
-│   ├── Appendices.pdf      # Thesis appendices
-│   ├── dictionaries/       # Filtering dictionary
-│   └── README.md         
+├── docs/                     # Documentation and supporting materials
+│   ├── codebook.pdf          # Annotation and frame codebook
+│   ├── Appendices.pdf        # Thesis appendices
+│   ├── dictionaries/         # Keyword dictionaries
+│   └── README.md
 │
-├── results/                # Output figures and analysis results
-│   └── *.png               # Visualizations for thesis
+├── results/                  # Final figures and outputs
 │
 └── README.md
-```
-
----
-
----
+````
 
 ## Pipeline
 
-| Step | Script | Language | Output |
-|------|--------|----------|--------|
-| 1 | `download_camera_transcripts.sh` | Bash | Raw Camera PDFs |
-| 2 | `download_senato_transcripts.sh` | Bash | Raw Senato PDFs |
-| 3 | `build_corpus.py` | Python | Camera TXT + metadata |
-| 4 | `build_corpus_senato.py` | Python | Senato TXT |
-| 5 | `extract_senato_metadata.py` | Python | Senato metadata CSV |
-| 6 | `segment_speakers.py` | Python | `speeches_raw.csv` |
-| 7 | `filter_activism.py` | Python | `dictionary_filtered.csv` |
-| 8 | `train_classifier.py` | Python | `activism_corpus_classified.csv` |
-| 9 | `clean_corpus.py` | Python | `activism_corpus_final.csv` |
-| 10 | `01_topic_assignment.R` | R | `corpus_with_topics.csv` |
-| 11 | `02_keyword_window_extraction.R` | R | `corpus_with_windows.csv` |
-| 12 | `03a_stm_searchK.R` | R | `searchK_results.csv` |
-| 13 | `03_stm_confirmatory.R` | R | `stm_models.rds` |
-| 14 | `04_keyness_analysis.R` | R | `keyness_all.csv` |
-| 15 | `plot_frames_dotplot.R` | R | `frame_dotplot.png` |
-
----
+| Step | Script                                            | Language | Output                         |
+| ---- | ------------------------------------------------- | -------- | ------------------------------ |
+| 1    | `scripts/download/download_camera_transcripts.sh` | Bash     | Raw Camera files               |
+| 2    | `scripts/download/download_senato_transcripts.sh` | Bash     | Raw Senato files               |
+| 3    | `scripts/build_corpus/build_corpus.py`            | Python   | Camera text and metadata       |
+| 4    | `scripts/build_corpus/build_corpus_senato.py`     | Python   | Senato text                    |
+| 5    | `scripts/metadata/extract_senato_metadata.py`     | Python   | Senato metadata                |
+| 6    | `scripts/preprocessing/segment_speakers.py`       | Python   | Raw speech-level corpus        |
+| 7    | `scripts/filtering/filter_activism.py`            | Python   | Dictionary-filtered corpus     |
+| 8    | `scripts/ML/train_classifier.py`                  | Python   | Supervised classifier output   |
+| 9    | `scripts/analysis/clean_corpus.py`                | Python   | Cleaned activism corpus        |
+| 10   | `scripts/analysis/01_topic_assignment.R`          | R        | Topic-assigned corpus          |
+| 11   | `scripts/analysis/02_keyword_window_extraction.R` | R        | Sentence-level keyword windows |
+| 12   | `scripts/analysis/03a_stm_searchK.R`              | R        | STM K-selection results        |
+| 13   | `scripts/analysis/03_stm_confirmatory.R`          | R        | Confirmatory STM outputs       |
+| 14   | `scripts/analysis/04_keyness_analysis.R`          | R        | Keyness results                |
+| 15   | `scripts/analysis/plot_frames_dotplot.R`          | R        | Final thesis figures           |
 
 ## Data
 
-| File | Description | Rows |
-|------|-------------|------|
-| `data/activism_corpus_final.csv` | Cleaned corpus, input to analysis pipeline | 1,144 |
-| `data/final_corpus.csv` | Analysis-ready dataset with topic labels | 1,056 |
-| `data/training_data_corrected.csv` | Manually annotated training sample | ~1,600 |
-| `data/frame_coding.csv` | Qualitative frame coding per party-topic-year cell | 84 |
+The repository includes processed data necessary to inspect and reproduce the main analysis.
 
-Raw PDFs are not included due to file size. Run steps 1–5 to reproduce data collection, or start from `data/activism_corpus_final.csv` for analysis only.
+| File                               | Description                                       |
+| ---------------------------------- | ------------------------------------------------- |
+| `data/activism_corpus_final.csv`   | Cleaned activism corpus used for analysis         |
+| `data/final_corpus.csv`            | Analysis-ready dataset with activism-topic labels |
+| `data/training_data_corrected.csv` | Manually annotated training sample                |
+| `data/frame_coding.csv`            | Qualitative frame coding by party-topic cell      |
 
----
+Raw parliamentary files are not included because of file size. They can be retrieved from the public parliamentary websites listed below, or regenerated by running the download and corpus-construction scripts.
 
-## Reproducing the Analysis
+## Reproducing the analysis
 
 ### Full pipeline
 
 ```bash
 # Data collection
-bash data_collection/download_camera_transcripts.sh
-bash data_collection/download_senato_transcripts.sh
+bash scripts/download/download_camera_transcripts.sh
+bash scripts/download/download_senato_transcripts.sh
 
-# Corpus construction
-python preprocessing/build_corpus.py
-python preprocessing/build_corpus_senato.py
-python preprocessing/extract_senato_metadata.py
-python preprocessing/segment_speakers.py
+# Corpus construction and preprocessing
+python scripts/build_corpus/build_corpus.py
+python scripts/build_corpus/build_corpus_senato.py
+python scripts/metadata/extract_senato_metadata.py
+python scripts/preprocessing/segment_speakers.py
 
-# Classification
-python classification/filter_activism.py
-python classification/train_classifier.py
+# Filtering and supervised classification
+python scripts/filtering/filter_activism.py
+python scripts/ML/train_classifier.py
 
-# Analysis pipeline
-python analysis_pipeline/clean_corpus.py
-Rscript analysis_pipeline/01_topic_assignment.R
-Rscript analysis_pipeline/02_keyword_window_extraction.R
-Rscript analysis_pipeline/03a_stm_searchK.R
-Rscript analysis_pipeline/03_stm_confirmatory.R
-Rscript analysis_pipeline/04_keyness_analysis.R
-Rscript analysis/plot_frames_dotplot.R
+# Cleaning and analysis
+python scripts/analysis/clean_corpus.py
+Rscript scripts/analysis/01_topic_assignment.R
+Rscript scripts/analysis/02_keyword_window_extraction.R
+Rscript scripts/analysis/03a_stm_searchK.R
+Rscript scripts/analysis/03_stm_confirmatory.R
+Rscript scripts/analysis/04_keyness_analysis.R
+Rscript scripts/analysis/plot_frames_dotplot.R
 ```
 
-### Analysis only
+### Analysis-only workflow
 
-If you have `data/activism_corpus_final.csv`, skip directly to:
+To reproduce the analysis starting from the cleaned activism corpus:
 
 ```bash
-Rscript analysis_pipeline/01_topic_assignment.R
-Rscript analysis_pipeline/02_keyword_window_extraction.R
-Rscript analysis_pipeline/03a_stm_searchK.R
-Rscript analysis_pipeline/03_stm_confirmatory.R
-Rscript analysis_pipeline/04_keyness_analysis.R
-Rscript analysis/plot_frames_dotplot.R
+python scripts/analysis/clean_corpus.py
+Rscript scripts/analysis/01_topic_assignment.R
+Rscript scripts/analysis/02_keyword_window_extraction.R
+Rscript scripts/analysis/03a_stm_searchK.R
+Rscript scripts/analysis/03_stm_confirmatory.R
+Rscript scripts/analysis/04_keyness_analysis.R
+Rscript scripts/analysis/plot_frames_dotplot.R
 ```
-
----
 
 ## Documentation
 
-- **Codebook:** `docs/codebook.docx`
-- **Appendices:** `docs/Appendices.docx`
+The main methodological documentation is available in:
 
----
+* `docs/codebook.pdf` – annotation and frame codebook;
+* `docs/Appendices.pdf` – thesis appendices;
+* `docs/dictionaries/` – keyword dictionaries used for filtering and topic assignment.
 
-## Data Sources
+## Data sources
 
-- Camera dei Deputati: https://www.camera.it
-- Senato della Repubblica: https://www.senato.it
+The corpus is based on public parliamentary records from:
 
-Parliamentary transcripts are public records attributed to identifiable Members of Parliament in their public capacity.
+* Camera dei Deputati: [https://www.camera.it](https://www.camera.it)
+* Senato della Repubblica: [https://www.senato.it](https://www.senato.it)
 
----
+Parliamentary transcripts are public records attributed to Members of Parliament in their public capacity.
+
+## Software
+
+The analysis uses Python and R.
+
+Main R packages include:
+
+* `tidyverse`
+* `ggplot2`
+* `readr`
+* `purrr`
+* `stm`
+* `udpipe`
+
+Main Python packages include:
+
+* `pandas`
+* `beautifulsoup4`
+* `scikit-learn`
+* `spaCy`
+
+## Notes on reproducibility
+
+The repository is intended to make the thesis pipeline transparent and reproducible. Some paths may need to be adjusted depending on the local directory structure. Raw parliamentary files are not included, but the scripts and processed data allow the main analysis to be inspected and reproduced.
 
 ## Citation
 
-> Gazzola, C. (2026). *(De)Legitimising Protest: Parliamentary Framing of Activism in Italy, 2018–2025.* BA thesis, University College Dublin. POL30870 Advanced Seminar in Politics.# (De)Legitimising Protest: Parliamentary Framing of Activism in Italy, 2018–2025
-> 
+Gazzola, C. (2026). *(De)Legitimising Protest: Parliamentary Framing of Activism in Italy, 2018–2025*. BA thesis, University College Dublin, POL30870 Advanced Seminar in Politics.
